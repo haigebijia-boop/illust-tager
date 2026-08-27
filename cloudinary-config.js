@@ -14,6 +14,6 @@
 // 詳しくは README.md の「トラブルシューティング／注意事項」を参照してください。
 
 export const cloudinaryConfig = {
-  cloudName: "YOUR_CLOUD_NAME",
-  uploadPreset: "YOUR_UPLOAD_PRESET",
+  cloudName: "xdndqotb",
+  uploadPreset: "illust_tager",
 };
