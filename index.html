@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コンタクトシート | イラストアーカイブ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="filmstrip">
+  <div class="sprockets" aria-hidden="true"></div>
+  <div class="header-inner">
+    <div class="auth-corner">
+      <span id="authStatus" class="auth-status hidden"></span>
+      <button id="loginToggleBtn" class="auth-link" type="button">ログイン</button>
+    </div>
+    <p class="eyebrow">MY ILLUSTRATION ARCHIVE</p>
+    <h1>コンタクトシート</h1>
+    <p class="sub">描いた絵を、光にかざして見返すように。年月・キャラ・色味から探せます。</p>
+  </div>
+  <div class="sprockets" aria-hidden="true"></div>
+</header>
+
+<main>
+
+  <section class="panel login-panel hidden" id="loginPanel">
+    <form id="loginForm" class="login-form">
+      <div class="field">
+        <label for="loginEmail">メールアドレス</label>
+        <input type="email" id="loginEmail" required>
+      </div>
+      <div class="field">
+        <label for="loginPassword">パスワード</label>
+        <input type="password" id="loginPassword" required>
+      </div>
+      <div class="form-actions">
+        <span id="loginStatus" class="upload-status"></span>
+        <button type="submit" class="btn-primary">ログイン</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel upload-panel hidden" id="uploadPanel">
+    <button id="toggleUpload" class="toggle-upload" type="button">
+      <span class="plus">＋</span> 新しいイラストを登録する
+    </button>
+
+    <form id="uploadForm" class="upload-form hidden" autocomplete="off">
+      <div class="form-grid">
+        <div class="field file-field">
+          <label for="fileInput">画像ファイル</label>
+          <input type="file" id="fileInput" accept="image/*" required>
+          <div id="previewWrap" class="preview-wrap hidden">
+            <img id="previewImg" alt="プレビュー">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="titleInput">タイトル（任意）</label>
+          <input type="text" id="titleInput" placeholder="例：夏祭りの一枚">
+        </div>
+
+        <div class="field">
+          <label for="dateInput">描いた年月（追加日を自動入力しています）</label>
+          <input type="month" id="dateInput">
+        </div>
+
+        <div class="field">
+          <label for="charInput">キャラクター（カンマ区切りで複数可）</label>
+          <input type="text" id="charInput" placeholder="例：ミク, オリジナルキャラA">
+        </div>
+
+        <div class="field field-wide">
+          <label for="colorInput">色味タグ</label>
+          <input type="text" id="colorInput" placeholder="例：夜, パステル（下の候補をクリックしても追加できます）">
+          <div id="colorSuggestions" class="color-suggestions hidden">
+            <div class="suggestion-head">
+              <span class="suggestion-label">画像から検出した色味候補</span>
+              <button type="button" id="addAllColorsBtn" class="chip-add-all">すべて追加</button>
+            </div>
+            <div id="colorChips" class="chip-row"></div>
+          </div>
+        </div>
+
+        <div class="field field-wide">
+          <label for="memoInput">メモ</label>
+          <textarea id="memoInput" rows="2" placeholder="制作メモや反省点など"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <span id="uploadStatus" class="upload-status"></span>
+        <button type="submit" class="btn-primary">登録する</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel filter-panel">
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="filterYear">年</label>
+        <select id="filterYear"><option value="">すべて</option></select>
+      </div>
+      <div class="filter-field">
+        <label for="filterMonth">月</label>
+        <select id="filterMonth">
+          <option value="">すべて</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="filterCharacter">キャラクター</label>
+        <select id="filterCharacter"><option value="">すべて</option></select>
+      </div>
+      <div class="filter-field">
+        <label for="filterColor">色味</label>
+        <select id="filterColor"><option value="">すべて</option></select>
+      </div>
+      <div class="filter-field filter-field-wide">
+        <label for="filterKeyword">キーワード</label>
+        <input type="text" id="filterKeyword" placeholder="タイトル・メモ・タグから検索">
+      </div>
+      <button id="resetFilters" class="btn-ghost" type="button">条件をクリア</button>
+    </div>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-meta">
+      <span id="resultCount" class="result-count"></span>
+    </div>
+    <div id="gallery" class="gallery"></div>
+    <p id="emptyState" class="empty-state hidden">まだ何も登録されていません。最初の一枚を追加してみましょう。</p>
+    <p id="loadingState" class="empty-state">読み込み中...</p>
+  </section>
+</main>
+
+<div id="detailModal" class="modal hidden">
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-card">
+    <button class="modal-close" id="modalClose" aria-label="閉じる">×</button>
+    <div class="modal-body">
+      <div class="modal-image-wrap">
+        <img id="modalImage" alt="">
+      </div>
+      <div class="modal-info">
+        <input type="text" id="editTitle" class="edit-title" placeholder="タイトル未設定" disabled>
+        <div class="edit-field">
+          <label>描いた年月</label>
+          <input type="month" id="editDate" disabled>
+        </div>
+        <div class="edit-field">
+          <label>キャラクター</label>
+          <input type="text" id="editCharacters" disabled>
+        </div>
+        <div class="edit-field">
+          <label>色味タグ</label>
+          <input type="text" id="editColors" disabled>
+        </div>
+        <div class="edit-field">
+          <label>メモ</label>
+          <textarea id="editMemo" rows="3" disabled></textarea>
+        </div>
+        <p class="meta-line" id="modalMeta"></p>
+        <div class="modal-actions" id="modalActions">
+          <button id="deleteBtn" class="btn-danger hidden" type="button">削除する</button>
+          <button id="saveBtn" class="btn-primary hidden" type="button">保存する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>

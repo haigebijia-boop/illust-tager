@@ -1,0 +1,19 @@
+// Firestoreのセキュリティルール
+//
+// 使い方:
+//   Firebaseコンソール → Firestore Database → 「ルール」タブを開き、
+//   中身を全部消して、このファイルの内容を貼り付け、「公開」をクリックしてください。
+//
+// 内容:
+//   - illustrations コレクションは「誰でも読み取り可」「ログインユーザーのみ書き込み可」
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /illustrations/{docId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+  }
+}

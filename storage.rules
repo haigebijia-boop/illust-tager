@@ -1,0 +1,19 @@
+// Firebase Storageのセキュリティルール
+//
+// 使い方:
+//   Firebaseコンソール → Storage → 「Rules」タブを開き、
+//   中身を全部消して、このファイルの内容を貼り付け、「公開」をクリックしてください。
+//
+// 内容:
+//   - illustrations/ フォルダ以下は「誰でも読み取り可」「ログインユーザーのみ書き込み・削除可」
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /illustrations/{fileName} {
+      allow read: if true;
+      allow write, delete: if request.auth != null;
+    }
+  }
+}
