@@ -6,13 +6,14 @@
 //   ウェブアプリ（</> アイコン）を追加すると、この形式の値が表示されます。
 //
 // これらの値は「公開されても問題ない」設定情報です（秘密鍵ではありません）。
-// 実際のアクセス制御は firestore.rules / storage.rules の方で行っています。
+// 実際のアクセス制御は firestore.rules の方で行っています。
+// （画像の保存はFirebase StorageではなくCloudinaryを使っています。
+//   Cloudinaryの接続情報は cloudinary-config.js に分けてあります）
 
 export const firebaseConfig = {
   apiKey: "AIzaSyBPL0fiVnTAVQAzMqx3RnwU_EnN9CUToCs",
   authDomain: "illust-8076f.firebaseapp.com",
   projectId: "illust-8076f",
-  storageBucket: "illust-8076f.firebasestorage.app",
   messagingSenderId: "872749263752",
   appId: "1:872749263752:web:611d9d9da28a8a6039e83d",
   measurementId: "G-M9BE0KKPD2"

@@ -1,15 +1,17 @@
 // コンタクトシート（Web版 / GitHub Pages想定）
-// サーバー(Python)は使わず、Firebaseだけでデータの保存・認証・検索を行う。
+// サーバー(Python)は使わず、Firebase + Cloudinaryだけでデータの保存・認証・検索を行う。
 //
-// - 画像本体      → Firebase Storage
+// - 画像本体      → Cloudinary（unsigned upload preset経由でクライアントから直接アップロード）
 // - タグ等のメタ情報 → Firebase Firestore（コレクション名: illustrations）
 // - ログイン       → Firebase Authentication（メール/パスワード）
 //   ※ 新規登録フォームは用意していない。オーナー自身をFirebaseコンソールの
 //     「Authentication」タブから手動で1ユーザーとして追加しておく想定。
 //
 // 閲覧(読み取り)は誰でも可能、追加・編集・削除はログインしたユーザーのみ
-// （実際のアクセス制御は firestore.rules / storage.rules 側で行っている。
-//   このファイルでのログイン状態によるUI出し分けは、あくまで見た目の制御）
+// （Firestoreへのアクセス制御は firestore.rules 側で行っている。
+//   このファイルでのログイン状態によるUI出し分けは、あくまで見た目の制御。
+//   Cloudinaryへのアップロードはunsigned presetを使うため、Firebase Authの
+//   ログイン状態はこのアプリのUI上でのみチェックしている点に注意）
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import {
@@ -30,20 +32,13 @@ import {
   orderBy,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
 
 import { firebaseConfig } from "./firebase-config.js";
+import { cloudinaryConfig } from "./cloudinary-config.js";
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
 
 const COLLECTION_NAME = "illustrations";
 
@@ -320,6 +315,25 @@ const COLLECTION_NAME = "illustrations";
 
   // ---------------- アップロード送信 ----------------
 
+  // Cloudinaryのunsigned upload presetを使ってクライアントから直接アップロードする。
+  // 署名（signature）が不要な代わりに、preset名を知っていれば誰でもアップロードできる
+  // 仕組みなので、preset名の取り扱いは README.md の注意事項を参照。
+  async function uploadToCloudinary(file) {
+    const url = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", cloudinaryConfig.uploadPreset);
+
+    const res = await fetch(url, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      throw new Error(`Cloudinaryへのアップロードに失敗しました (status: ${res.status})`);
+    }
+    return res.json(); // { secure_url, public_id, ... }
+  }
+
   uploadForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -331,12 +345,8 @@ const COLLECTION_NAME = "illustrations";
 
     uploadStatus.textContent = "アップロード中...";
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const storagePath = `illustrations/${crypto.randomUUID()}.${ext}`;
-      const storageRef = ref(storage, storagePath);
-
-      await uploadBytes(storageRef, file);
-      const imageURL = await getDownloadURL(storageRef);
+      const cloudinaryResult = await uploadToCloudinary(file);
+      const imageURL = cloudinaryResult.secure_url;
 
       const drawnDateValue = dateInput.value; // "YYYY-MM"
       let drawnYear = null, drawnMonth = null;
@@ -353,8 +363,8 @@ const COLLECTION_NAME = "illustrations";
         characters: splitTags(document.getElementById("charInput").value),
         colors: splitTags(colorInput.value),
         memo: document.getElementById("memoInput").value.trim(),
-        imagePath: storagePath,
         imageURL,
+        imagePublicId: cloudinaryResult.public_id,
         createdAt: serverTimestamp(),
         createdBy: currentUser.email,
       });
@@ -581,14 +591,12 @@ const COLLECTION_NAME = "illustrations";
 
   deleteBtn.addEventListener("click", async () => {
     if (!currentUser || currentItemId == null) return;
-    if (!confirm("このイラストを削除しますか？元に戻せません。")) return;
+    if (!confirm("このイラストを削除しますか？元に戻せません。\n（Cloudinary上の画像ファイル自体は削除されず残ります）")) return;
 
-    const item = allItems.find((i) => i.id === currentItemId);
     try {
+      // Firestoreのレコードのみ削除する。Cloudinary側の画像削除にはAPIの署名が必要で、
+      // unsigned upload presetだけでは実行できないため、画像ファイル自体は残る仕様にしている。
       await deleteDoc(doc(db, COLLECTION_NAME, currentItemId));
-      if (item && item.imagePath) {
-        await deleteObject(ref(storage, item.imagePath)).catch(() => {});
-      }
       closeModal();
       await loadGallery();
     } catch (err) {
